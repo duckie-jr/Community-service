@@ -1,17 +1,19 @@
 {
-  "name": "CS - Community Service Tracker",
-  "short_name": "CS Tracker",
-  "description": "Simple offline-first community service hour tracker designed for low-light environments.",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+"id": "/com-service-app/",
+"name": "com service tracker",
+"short_name": "com service",
+"description": "Simple offline-first community service hour tracker.",
+"start_url": "./index.html",
+"scope": "./",
+"display": "standalone",
+"background_color": "#000000",
+"theme_color": "#000000",
+"icons": [
+{
+"src": "data:image/svg+xml;utf8,",
+"sizes": "512x512",
+"type": "image/svg+xml",
+"purpose": "any maskable"
+}
+]
 }
