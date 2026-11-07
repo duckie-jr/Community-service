@@ -64,46 +64,46 @@
     <!-- Standard 3-Tab Bar -->
     <div id="standardNavBar" class="flex items-center justify-between w-full h-14">
       <nav class="flex-1 grid grid-cols-3 h-full">
-        <button id="navLive" onclick="switchTab('live')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white bg-[#080d1a] px-1">
-          <i data-lucide="timer" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Active Tracker</span>
+        <button id="navLive" onclick="switchTab('live')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white bg-[#080d1a] px-2">
+          <i data-lucide="timer" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Active Tracker</span>
         </button>
-        <button id="navHistory" onclick="switchTab('history')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-slate-400 hover:text-white hover:bg-[#080d1a] px-1">
-          <i data-lucide="history" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Service History</span>
+        <button id="navHistory" onclick="switchTab('history')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-slate-400 hover:text-white hover:bg-[#080d1a] px-2">
+          <i data-lucide="history" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Service History</span>
         </button>
-        <button id="navManual" onclick="switchTab('manual')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase text-slate-400 hover:text-white hover:bg-[#080d1a] px-1">
-          <i data-lucide="clock" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Log Past Hours</span>
+        <button id="navManual" onclick="switchTab('manual')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase text-slate-400 hover:text-white hover:bg-[#080d1a] px-2">
+          <i data-lucide="clock" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Log Past Hours</span>
         </button>
       </nav>
 
       <!-- Database Cylinder Button -->
       <button id="openDataOverlayBtn" onclick="toggleDataOverlay(true)" title="Data Management" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#080d1a]">
-        <i data-lucide="database" class="w-5 h-5 text-white"></i>
+        <i data-lucide="database" class="w-6 h-6 text-white"></i>
       </button>
     </div>
 
     <!-- Data Management Overlay Bar -->
     <div id="dataOverlayBar" class="hidden flex items-center justify-between w-full h-14 bg-[#080d1a] border-b border-[#121e36]">
       <div class="flex-1 grid grid-cols-3 h-full">
-        <button onclick="directExportMarkdown()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-1">
-          <i data-lucide="file-text" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Export Info</span>
+        <button onclick="directExportMarkdown()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-2">
+          <i data-lucide="file-text" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Export Info</span>
         </button>
-        <button onclick="directExportJSON()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-1">
-          <i data-lucide="download" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Export Data</span>
+        <button onclick="directExportJSON()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-2">
+          <i data-lucide="download" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Export Data</span>
         </button>
-        <button onclick="triggerImportFileDialog()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase text-white hover:bg-[#121e36] px-1">
-          <i data-lucide="upload" class="w-5 h-5 text-white shrink-0"></i>
-          <span class="hidden sm:inline truncate">Import Data</span>
+        <button onclick="triggerImportFileDialog()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase text-white hover:bg-[#121e36] px-2">
+          <i data-lucide="upload" class="w-6 h-6 text-white shrink-0"></i>
+          <span class="hidden md:inline truncate">Import Data</span>
         </button>
       </div>
 
       <!-- Close Overlay Button -->
       <button onclick="toggleDataOverlay(false)" title="Close Data Menu" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#121e36]">
-        <i data-lucide="x" class="w-5 h-5 text-white"></i>
+        <i data-lucide="x" class="w-6 h-6 text-white"></i>
       </button>
     </div>
 
