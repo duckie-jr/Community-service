@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Service Hour Tracker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .navy-input {
+      background-color: #080d1a;
+      border: 1px solid #121e36;
+      color: #ffffff;
+      border-radius: 0px !important;
+    }
+    .navy-input:focus {
+      border-color: #ffffff;
+      outline: none;
+    }
+    /* Blocky tabular numbers font style for uniform timer digits */
+    .timer-font {
+      font-family: 'Courier New', Courier, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-variant-numeric: tabular-nums lining-nums;
+      letter-spacing: 0.1em;
+    }
+    /* Force date and time picker icons to be crisp white */
+    ::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 1;
+      cursor: pointer;
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #121e36;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-black text-white">
+
+  <!-- TOP NAVIGATION BAR / DATA OVERLAY BAR -->
+  <header class="w-full border-b border-[#121e36] bg-[#000000] sticky top-0 z-30">
+    
+    <!-- Standard 3-Tab Bar -->
+    <div id="standardNavBar" class="flex items-center justify-between w-full h-14">
+      <nav class="flex-1 grid grid-cols-3 h-full">
+        <button id="navLive" onclick="switchTab('live')" class="h-full flex items-center justify-center text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white bg-[#080d1a]">
+          <span class="w-[85%] truncate">Active Tracker</span>
+        </button>
+        <button id="navHistory" onclick="switchTab('history')" class="h-full flex items-center justify-center text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-slate-400 hover:text-white hover:bg-[#080d1a]">
+          <span class="w-[85%] truncate">Service History</span>
+        </button>
+        <button id="navManual" onclick="switchTab('manual')" class="h-full flex items-center justify-center text-center font-semibold text-xs sm:text-sm tracking-wider uppercase text-slate-400 hover:text-white hover:bg-[#080d1a]">
+          <span class="w-[85%] truncate">Log Past Hours</span>
+        </button>
+      </nav>
+
+      <!-- Database Cylinder Button -->
+      <button id="openDataOverlayBtn" onclick="toggleDataOverlay(true)" title="Data Management" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#080d1a]">
+        <i data-lucide="database" class="w-5 h-5 text-white"></i>
+      </button>
+    </div>
+
+    <!-- Data Management Overlay Bar -->
+    <div id="dataOverlayBar" class="hidden flex items-center justify-between w-full h-14 bg-[#080d1a] border-b border-[#121e36]">
+      <div class="flex-1 grid grid-cols-3 h-full">
+        <button onclick="directExportMarkdown()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36]">
+          <i data-lucide="file-text" class="w-4 h-4 text-white"></i>
+          <span class="truncate">Export Info</span>
+        </button>
+        <button onclick="directExportJSON()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36]">
+          <i data-lucide="download" class="w-4 h-4 text-white"></i>
+          <span class="truncate">Export Data</span>
+        </button>
+        <button onclick="triggerImportFileDialog()" class="h-full flex items-center justify-center gap-1.5 text-center font-semibold text-xs sm:text-sm tracking-wider uppercase text-white hover:bg-[#121e36]">
+          <i data-lucide="upload" class="w-4 h-4 text-white"></i>
+          <span class="truncate">Import Data</span>
+        </button>
+      </div>
+
+      <!-- Close Overlay Button -->
+      <button onclick="toggleDataOverlay(false)" title="Close Data Menu" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#121e36]">
+        <i data-lucide="x" class="w-5 h-5 text-white"></i>
+      </button>
+    </div>
+
+    <!-- Hidden Native File Input for Import -->
+    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="handleImportFile(event)">
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 w-full px-4 sm:px-8 py-6">
+
+    <!-- ==========================================
+         TAB 1: ACTIVE TRACKER
+         ========================================== -->
+    <section id="tabLive" class="w-full">
+      <div class="space-y-6 w-full">
+        <div class="flex justify-between items-center border-b border-[#121e36] pb-3">
+          <span id="timerStatus" class="text-xs font-semibold text-slate-400 tracking-widest uppercase border border-[#121e36] px-3 py-1">
+            READY TO START
+          </span>
+        </div>
+
+        <div class="py-8 text-center space-y-2">
+          <div id="timerDisplay" class="timer-font text-5xl sm:text-6xl font-extrabold text-white">
+            00:00:00
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name</label>
+            <input type="text" id="liveActivity" list="activitySuggestions" placeholder="Activity Name" class="w-full p-4 navy-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes / Details</label>
+            <textarea id="liveNotes" rows="3" placeholder="Additional details..." class="w-full p-4 navy-input"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 flex gap-4">
+          <button id="startTimerBtn" onclick="toggleTimer()" class="flex-1 py-4 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-5 h-5 text-white"></i>
+            <span>Start Session</span>
+          </button>
+          <button id="resetTimerBtn" onclick="resetTimer()" class="py-4 px-6 bg-black text-white hover:bg-[#080d1a] border border-white font-bold tracking-wider uppercase">
+            Reset
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 2: SERVICE HISTORY
+         ========================================== -->
+    <section id="tabHistory" class="hidden w-full space-y-6">
+      
+      <!-- Total Hours & Filter Bar -->
+      <div class="border border-[#121e36] bg-[#080d1a] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Accumulated Service</span>
+          <span id="totalHoursDisplay" class="text-3xl font-extrabold text-white">0.00 Hours</span>
+        </div>
+
+        <div class="w-full sm:w-auto flex items-center gap-2">
+          <label for="sortOrder" class="text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Sort By:</label>
+          <select id="sortOrder" onchange="renderHistory()" class="navy-input p-2 text-xs uppercase tracking-wider w-full sm:w-auto">
+            <option value="date-desc">Date (Newest First)</option>
+            <option value="date-asc">Date (Oldest First)</option>
+            <option value="title-custom">Activity (Custom Sort)</option>
+            <option value="duration-desc">Duration (Longest First)</option>
+            <option value="duration-asc">Duration (Shortest First)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div>
+        <input type="text" id="searchHistoryInput" oninput="renderHistory()" placeholder="Search logs by title or details..." class="w-full p-3 navy-input text-sm">
+      </div>
+
+      <!-- Logs Container -->
+      <div id="historyList" class="space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: LOG PAST HOURS
+         ========================================== -->
+    <section id="tabManual" class="hidden w-full space-y-6">
+      <div class="border-b border-[#121e36] pb-3">
+        <h2 class="text-xs font-semibold text-slate-400 tracking-widest uppercase">Manual Event Log Entry</h2>
+      </div>
+
+      <form id="manualEntryForm" onsubmit="handleManualSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name *</label>
+          <input type="text" id="manualActivity" list="activitySuggestions" placeholder="Activity Name" required class="w-full p-4 navy-input">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date *</label>
+            <input type="date" id="manualDate" required class="w-full p-4 navy-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Start Time *</label>
+            <input type="time" id="manualStartTime" required class="w-full p-4 navy-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">End Time *</label>
+            <input type="time" id="manualEndTime" required class="w-full p-4 navy-input">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes / Details</label>
+          <textarea id="manualNotes" rows="3" placeholder="Notes / Details" class="w-full p-4 navy-input"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-4 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white flex items-center justify-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-white"></i>
+          <span>Save Log Entry</span>
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- SHARED AUTOCOMPLETE DATASET -->
+  <datalist id="activitySuggestions">
+    <!-- Populated dynamically with custom sorting rule -->
+  </datalist>
+
+  <!-- EDIT MODAL -->
+  <div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="w-full max-w-lg bg-[#080d1a] border border-[#121e36] p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-[#121e36] pb-3">
+        <h3 class="text-xs font-semibold uppercase tracking-widest text-slate-400">Edit Log Entry</h3>
+        <button id="closeEditModalBtn" onclick="closeEditModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5 text-white"></i>
+        </button>
+      </div>
+
+      <form id="editEntryForm" onsubmit="handleEditSubmit(event)" class="space-y-4">
+        <input type="hidden" id="editEntryId">
+        
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name *</label>
+          <input type="text" id="editActivity" list="activitySuggestions" required class="w-full p-3 navy-input">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date *</label>
+            <input type="date" id="editDate" required class="w-full p-3 navy-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Start Time *</label>
+            <input type="time" id="editStartTime" required class="w-full p-3 navy-input">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">End Time *</label>
+            <input type="time" id="editEndTime" required class="w-full p-3 navy-input">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes</label>
+          <textarea id="editNotes" rows="2" class="w-full p-3 navy-input"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 py-3 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white">
+            Save Changes
+          </button>
+          <button type="button" id="cancelEditBtn" onclick="closeEditModal()" class="py-3 px-4 bg-black text-white hover:bg-[#080d1a] border border-white font-bold tracking-wider uppercase">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Inline Service Worker for Instant Boot Offline Caching
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE_NAME = 'cs-tracker-v1';
+        const ASSETS = [
+          './',
+          'https://cdn.tailwindcss.com',
+          'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+          'https://unpkg.com/lucide@latest'
+        ];
+        self.addEventListener('install', (e) => {
+          e.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+          );
+        });
+        self.addEventListener('fetch', (e) => {
+          e.respondWith(
+            caches.match(e.request).then((res) => res || fetch(e.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(() => {});
+    }
+
+    // Global State
+    let serviceLogs = JSON.parse(localStorage.getItem('cs_service_logs') || '[]');
+    let timerState = JSON.parse(localStorage.getItem('cs_timer_state') || '{"running": false, "startTime": null, "elapsed": 0, "activity": "", "notes": ""}');
+    let timerInterval = null;
+
+    // Custom Sorting Comparison Hierarchy:
+    // 1. Symbols/Punctuation
+    // 2. Numbers (0-9)
+    // 3. Uppercase Letters (A-Z)
+    // 4. Lowercase Letters (a-z)
+    function customCharPriority(ch) {
+      if (!ch) return 0;
+      const code = ch.charCodeAt(0);
+      if (code >= 48 && code <= 57) return 2; // Numbers
+      if (code >= 65 && code <= 90) return 3; // Uppercase A-Z
+      if (code >= 97 && code <= 122) return 4; // Lowercase a-z
+      return 1; // Symbols / Special Characters
+    }
+
+    function compareCustomOrder(strA, strB) {
+      const len = Math.min(strA.length, strB.length);
+      for (let i = 0; i < len; i++) {
+        const charA = strA[i];
+        const charB = strB[i];
+        if (charA !== charB) {
+          const prioA = customCharPriority(charA);
+          const prioB = customCharPriority(charB);
+          if (prioA !== prioB) return prioA - prioB;
+          return charA.localeCompare(charB);
+        }
+      }
+      return strA.length - strB.length;
+    }
+
+    // Initialize Application
+    window.onload = function() {
+      lucide.createIcons();
+      setDefaultDates();
+      updateAutocompleteOptions();
+      renderHistory();
+      restoreTimerState();
+    };
+
+    function setDefaultDates() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('manualDate').value = today;
+    }
+
+    // Navigation Tab Switcher
+    function switchTab(tabKey) {
+      document.getElementById('tabLive').classList.add('hidden');
+      document.getElementById('tabHistory').classList.add('hidden');
+      document.getElementById('tabManual').classList.add('hidden');
+
+      const navLive = document.getElementById('navLive');
+      const navHistory = document.getElementById('navHistory');
+      const navManual = document.getElementById('navManual');
+
+      [navLive, navHistory, navManual].forEach(btn => {
+        btn.classList.remove('text-white', 'bg-[#080d1a]');
+        btn.classList.add('text-slate-400');
+      });
+
+      if (tabKey === 'live') {
+        document.getElementById('tabLive').classList.remove('hidden');
+        navLive.classList.add('text-white', 'bg-[#080d1a]');
+      } else if (tabKey === 'history') {
+        document.getElementById('tabHistory').classList.remove('hidden');
+        navHistory.classList.add('text-white', 'bg-[#080d1a]');
+        renderHistory();
+      } else if (tabKey === 'manual') {
+        document.getElementById('tabManual').classList.remove('hidden');
+        navManual.classList.add('text-white', 'bg-[#080d1a]');
+      }
+    }
+
+    // Data Overlay Toggle
+    function toggleDataOverlay(show) {
+      const standardNavBar = document.getElementById('standardNavBar');
+      const dataOverlayBar = document.getElementById('dataOverlayBar');
+
+      if (show) {
+        standardNavBar.classList.add('hidden');
+        dataOverlayBar.classList.remove('hidden');
+      } else {
+        dataOverlayBar.classList.add('hidden');
+        standardNavBar.classList.remove('hidden');
+      }
+    }
+
+    // Autocomplete Suggestions Generator
+    function updateAutocompleteOptions() {
+      const datalist = document.getElementById('activitySuggestions');
+      datalist.innerHTML = '';
+
+      const uniqueActivities = Array.from(new Set(
+        serviceLogs.map(log => log.activity).filter(Boolean)
+      )).sort(compareCustomOrder);
+
+      uniqueActivities.forEach(activity => {
+        const option = document.createElement('option');
+        option.value = activity;
+        datalist.appendChild(option);
+      });
+    }
+
+    // Save Data to Local Storage
+    function saveLogs() {
+      localStorage.setItem('cs_service_logs', JSON.stringify(serviceLogs));
+      updateAutocompleteOptions();
+    }
+
+    // Active Timer Management
+    function toggleTimer() {
+      if (!timerState.running) {
+        timerState.running = true;
+        timerState.startTime = Date.now() - (timerState.elapsed || 0);
+        timerState.activity = document.getElementById('liveActivity').value;
+        timerState.notes = document.getElementById('liveNotes').value;
+        
+        timerInterval = setInterval(updateTimerUI, 1000);
+        updateTimerButtonState();
+      } else {
+        // Stop & Save Session
+        timerState.running = false;
+        clearInterval(timerInterval);
+        
+        const finalElapsedSec = Math.floor((Date.now() - timerState.startTime) / 1000);
+        const activityName = document.getElementById('liveActivity').value.trim() || 'General Community Service';
+        const notes = document.getElementById('liveNotes').value.trim();
+
+        if (finalElapsedSec >= 5) {
+          const now = new Date();
+          const startDate = new Date(Date.now() - finalElapsedSec * 1000);
+          
+          const newLog = {
+            id: 'log_' + Date.now(),
+            activity: activityName,
+            date: startDate.toISOString().split('T')[0],
+            startTime: startDate.toTimeString().substring(0, 5),
+            endTime: now.toTimeString().substring(0, 5),
+            durationSeconds: finalElapsedSec,
+            notes: notes
+          };
+
+          serviceLogs.push(newLog);
+          saveLogs();
+        }
+
+        resetTimer();
+        switchTab('history');
+      }
+      saveTimerState();
+    }
+
+    function resetTimer() {
+      timerState = { running: false, startTime: null, elapsed: 0, activity: '', notes: '' };
+      clearInterval(timerInterval);
+      document.getElementById('timerDisplay').textContent = '00:00:00';
+      document.getElementById('liveActivity').value = '';
+      document.getElementById('liveNotes').value = '';
+      updateTimerButtonState();
+      saveTimerState();
+    }
+
+    function saveTimerState() {
+      if (timerState.running) {
+        timerState.activity = document.getElementById('liveActivity').value;
+        timerState.notes = document.getElementById('liveNotes').value;
+      }
+      localStorage.setItem('cs_timer_state', JSON.stringify(timerState));
+    }
+
+    function restoreTimerState() {
+      if (timerState.running && timerState.startTime) {
+        document.getElementById('liveActivity').value = timerState.activity || '';
+        document.getElementById('liveNotes').value = timerState.notes || '';
+        timerInterval = setInterval(updateTimerUI, 1000);
+        updateTimerUI();
+        updateTimerButtonState();
+      }
+    }
+
+    function updateTimerUI() {
+      if (!timerState.running) return;
+      const totalSec = Math.floor((Date.now() - timerState.startTime) / 1000);
+      
+      const hrs = Math.floor(totalSec / 3600).toString().padStart(2, '0');
+      const mins = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
+      const secs = (totalSec % 60).toString().padStart(2, '0');
+
+      document.getElementById('timerDisplay').textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    function updateTimerButtonState() {
+      const btn = document.getElementById('startTimerBtn');
+      const statusText = document.getElementById('timerStatus');
+
+      if (timerState.running) {
+        btn.innerHTML = `<i data-lucide="square" class="w-5 h-5 text-white"></i><span>Stop & Save Session</span>`;
+        statusText.textContent = 'SESSION IN PROGRESS';
+        statusText.classList.remove('text-slate-400');
+        statusText.classList.add('text-white');
+      } else {
+        btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 text-white"></i><span>Start Session</span>`;
+        statusText.textContent = 'READY TO START';
+        statusText.classList.remove('text-white');
+        statusText.classList.add('text-slate-400');
+      }
+      lucide.createIcons();
+    }
+
+    // Manual Form Submission
+    function handleManualSubmit(e) {
+      e.preventDefault();
+      
+      const activity = document.getElementById('manualActivity').value.trim();
+      const date = document.getElementById('manualDate').value;
+      const startTime = document.getElementById('manualStartTime').value;
+      const endTime = document.getElementById('manualEndTime').value;
+      const notes = document.getElementById('manualNotes').value.trim();
+
+      const start = new Date(`${date}T${startTime}`);
+      const end = new Date(`${date}T${endTime}`);
+
+      let durationSec = Math.floor((end - start) / 1000);
+      if (durationSec < 0) durationSec += 86400; // Overnight adjustment
+
+      const newLog = {
+        id: 'log_' + Date.now(),
+        activity,
+        date,
+        startTime,
+        endTime,
+        durationSeconds: durationSec,
+        notes
+      };
+
+      serviceLogs.push(newLog);
+      saveLogs();
+
+      // Reset form
+      document.getElementById('manualActivity').value = '';
+      document.getElementById('manualNotes').value = '';
+      setDefaultDates();
+
+      switchTab('history');
+    }
+
+    // Render Service History List & Total Hours
+    function renderHistory() {
+      const container = document.getElementById('historyList');
+      const searchQuery = document.getElementById('searchHistoryInput').value.toLowerCase();
+      const sortMode = document.getElementById('sortOrder').value;
+
+      let filtered = serviceLogs.filter(log => 
+        log.activity.toLowerCase().includes(searchQuery) ||
+        (log.notes && log.notes.toLowerCase().includes(searchQuery))
+      );
+
+      // Sorting Logic
+      filtered.sort((a, b) => {
+        if (sortMode === 'date-desc') return new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime);
+        if (sortMode === 'date-asc') return new Date(a.date + 'T' + a.startTime) - new Date(b.date + 'T' + b.startTime);
+        if (sortMode === 'duration-desc') return b.durationSeconds - a.durationSeconds;
+        if (sortMode === 'duration-asc') return a.durationSeconds - b.durationSeconds;
+        if (sortMode === 'title-custom') return compareCustomOrder(a.activity, b.activity);
+        return 0;
+      });
+
+      // Total Hours Calculation
+      const totalSec = serviceLogs.reduce((acc, item) => acc + (item.durationSeconds || 0), 0);
+      const totalHours = (totalSec / 3600).toFixed(2);
+      document.getElementById('totalHoursDisplay').textContent = `${totalHours} Hours`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="border border-[#121e36] bg-[#080d1a] p-8 text-center text-slate-400 text-sm">
+            No service records found.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(log => {
+        const hrs = (log.durationSeconds / 3600).toFixed(2);
+        return `
+          <div class="border border-[#121e36] bg-[#080d1a] p-4 flex flex-col justify-between gap-4">
+            <div class="flex justify-between items-start gap-4">
+              <div>
+                <h3 class="font-bold text-white text-base">${escapeHtml(log.activity)}</h3>
+                <div class="text-xs text-slate-400 space-x-2 mt-1">
+                  <span>${log.date}</span>
+                  <span>•</span>
+                  <span>${log.startTime} - ${log.endTime}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-lg font-extrabold text-white">${hrs} hrs</span>
+              </div>
+            </div>
+
+            ${log.notes ? `<p class="text-xs text-slate-300 border-t border-[#121e36] pt-2">${escapeHtml(log.notes)}</p>` : ''}
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-[#121e36]">
+              <button onclick="openEditModal('${log.id}')" class="px-3 py-1 text-xs border border-white text-white hover:bg-[#121e36] font-semibold">
+                Edit
+              </button>
+              <button onclick="deleteLog('${log.id}')" class="px-3 py-1 text-xs border border-white text-white hover:bg-[#121e36] font-semibold">
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Log Deletion
+    function deleteLog(id) {
+      serviceLogs = serviceLogs.filter(log => log.id !== id);
+      saveLogs();
+      renderHistory();
+    }
+
+    // Edit Log Modal Handler
+    function openEditModal(id) {
+      const log = serviceLogs.find(l => l.id === id);
+      if (!log) return;
+
+      document.getElementById('editEntryId').value = log.id;
+      document.getElementById('editActivity').value = log.activity;
+      document.getElementById('editDate').value = log.date;
+      document.getElementById('editStartTime').value = log.startTime;
+      document.getElementById('editEndTime').value = log.endTime;
+      document.getElementById('editNotes').value = log.notes || '';
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function handleEditSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editEntryId').value;
+      const log = serviceLogs.find(l => l.id === id);
+      if (!log) return;
+
+      log.activity = document.getElementById('editActivity').value.trim();
+      log.date = document.getElementById('editDate').value;
+      log.startTime = document.getElementById('editStartTime').value;
+      log.endTime = document.getElementById('editEndTime').value;
+      log.notes = document.getElementById('editNotes').value.trim();
+
+      const start = new Date(`${log.date}T${log.startTime}`);
+      const end = new Date(`${log.date}T${log.endTime}`);
+      let durationSec = Math.floor((end - start) / 1000);
+      if (durationSec < 0) durationSec += 86400;
+      log.durationSeconds = durationSec;
+
+      saveLogs();
+      closeEditModal();
+      renderHistory();
+    }
+
+    // Direct Markdown Export (.md file download)
+    function directExportMarkdown() {
+      if (serviceLogs.length === 0) {
+        alert('No service logs available to export.');
+        return;
+      }
+
+      const totalSec = serviceLogs.reduce((acc, i) => acc + (i.durationSeconds || 0), 0);
+      const totalHours = (totalSec / 3600).toFixed(2);
+
+      let mdContent = `# Community Service Log Summary\n\n`;
+      mdContent += `**Total Hours Logged:** ${totalHours} Hours\n\n`;
+      mdContent += `---\n\n`;
+
+      serviceLogs.forEach(log => {
+        const hrs = (log.durationSeconds / 3600).toFixed(2);
+        mdContent += `### ${log.activity}\n`;
+        mdContent += `- **Date:** ${log.date}\n`;
+        mdContent += `- **Time:** ${log.startTime} – ${log.endTime} (${hrs} hrs)\n`;
+        if (log.notes) {
+          mdContent += `- **Details:** ${log.notes}\n`;
+        }
+        mdContent += `\n`;
+      });
+
+      downloadFile(mdContent, 'community_service_resume.md', 'text/markdown');
+      toggleDataOverlay(false);
+    }
+
+    // Direct JSON Export (.json backup file download)
+    function directExportJSON() {
+      const dataStr = JSON.stringify(serviceLogs, null, 2);
+      downloadFile(dataStr, 'community_service_backup.json', 'application/json');
+      toggleDataOverlay(false);
+    }
+
+    // Import File Dialog Trigger
+    function triggerImportFileDialog() {
+      document.getElementById('importFileInput').click();
+    }
+
+    function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            serviceLogs = imported;
+            saveLogs();
+            renderHistory();
+            alert('Service data imported successfully!');
+            toggleDataOverlay(false);
+          } else {
+            alert('Invalid backup file format.');
+          }
+        } catch (err) {
+          alert('Error parsing JSON backup file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Helper Utility for Initiating Downloads
+    function downloadFile(content, fileName, contentType) {
+      const a = document.createElement('a');
+      const file = new Blob([content], { type: contentType });
+      a.href = URL.createObjectURL(file);
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // Helper String Escape
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
