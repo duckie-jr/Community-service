@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <!-- Background Canvas -->
-  <rect width="512" height="512" fill="#000000"/>
+  <!-- Transparent Background -->
   
-  <!-- Outer Circular Base: Solid Blue Fill & Blue Border -->
+  <!-- Outer Circular Base: Solid Dark Blue Fill & Blue Border -->
   <circle cx="256" cy="256" r="210" fill="#080d1a" stroke="#121e36" stroke-width="20"/>
   
   <!-- Minimalist Clock Hands in Center -->
