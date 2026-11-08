@@ -4,12 +4,14 @@ A lightweight, dark-themed tracker designed specifically for quick use on mobile
 
 ![App Icon](icon.svg)
 
+Live at: **https://duckie-jr.github.io/Community-service/**
+
 ## Features
 
 - **Active Tracker**: Live start/stop timer with zero-shift blocky tabular digits (`00:00:00`).
 - **Service History**: Log list with custom sorting options, search filtering, edit/delete actions, and accumulated service counter.
 - **Log Past Hours**: Manual entry form for historical events with default dates set to today.
-- **Custom Sort Autocomplete**: Automatically suggests past activity titles following strict ordering: **Symbols $\rightarrow$ Numbers (0–9) $\rightarrow$ Uppercase (A–Z) $\rightarrow$ Lowercase (a–z)**.
+- **Custom Sort Autocomplete**: Automatically suggests past activity titles following strict ordering: **Symbols $\\rightarrow$ Numbers (0–9) $\\rightarrow$ Uppercase (A–Z) $\\rightarrow$ Lowercase (a–z)**.
 - **Export / Data Bar**: Quick top-right overlay to export formatted Markdown resume files (`.md`), backup JSON files (`.json`), or import existing backups.
 - **Offline & Local**: Everything auto-saves to browser `localStorage` and caches via an inline Service Worker.
 
