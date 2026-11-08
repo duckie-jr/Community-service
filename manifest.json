@@ -1,19 +1,18 @@
 {
-"id": "com-service-tracker-pwa-v2",
-"name": "community service tracker",
-"short_name": "com serv",
-"description": "Simple offline-first community service hour tracker.",
-"start_url": "./index.html?v=2",
-"scope": "./",
-"display": "standalone",
-"background_color": "#000000",
-"theme_color": "#000000",
+"short_name": "com service",
+"name": "com service tracker",
 "icons": [
 {
-"src": "data:image/svg+xml;utf8,",
-"sizes": "512x512",
+"src": "icon.svg",
 "type": "image/svg+xml",
+"sizes": "192x192 512x512",
 "purpose": "any maskable"
 }
-]
+],
+"start_url": ".",
+"scope": "./",
+"background_color": "#000000",
+"theme_color": "#000000",
+"display": "standalone",
+"orientation": "any"
 }
