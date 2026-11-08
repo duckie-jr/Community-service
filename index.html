@@ -4,595 +4,512 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Community Service Hour Tracker</title>
-  <!-- Web App Manifest & Embedded SVG Favicon with Transparent Background -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><circle cx='256' cy='256' r='210' fill='%23080d1a' stroke='%23121e36' stroke-width='20'/><line x1='256' y1='256' x2='256' y2='135' stroke='%23ffffff' stroke-width='18' stroke-linecap='square'/><line x1='256' y1='256' x2='345' y2='256' stroke='%23ffffff' stroke-width='14' stroke-linecap='square'/><circle cx='256' cy='256' r='16' fill='%23ffffff'/></svg>">
   <meta name="theme-color" content="#000000">
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts & Lucide Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    :root {
+      --bg: #000000;
+      --panel: #080d1a;
+      --line: #121e36;
+      --fg: #ffffff;
+      --muted: #8fa3c0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #000000;
-      color: #ffffff;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
       -webkit-tap-highlight-color: transparent;
     }
-    .navy-input {
-      background-color: #080d1a;
-      border: 1px solid #121e36;
-      color: #ffffff;
-      border-radius: 0px !important;
+    button { font: inherit; cursor: pointer; }
+    input, select, textarea { font: inherit; }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
+
+    .navbar {
+      display: flex; align-items: stretch; width: 100%;
+      height: 56px; border-bottom: 1px solid var(--line);
     }
-    .navy-input:focus {
-      border-color: #ffffff;
-      outline: none;
+    .navbar button {
+      background: transparent; color: var(--muted); border: none;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+      padding: 0 14px; flex: 1; transition: background .15s, color .15s;
     }
-    /* Blocky tabular numbers font style for uniform timer digits */
-    .timer-font {
-      font-family: 'Courier New', Courier, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    .navbar button + button { border-left: 1px solid var(--line); }
+    .navbar button:hover { color: var(--fg); background: var(--panel); }
+    .navbar button.active { color: var(--fg); background: var(--panel); }
+    #openDataOverlayBtn { flex: 0 0 auto; border-left: 1px solid var(--line); }
+
+    .databar {
+      display: none; align-items: stretch; width: 100%;
+      height: 56px; background: var(--panel); border-bottom: 1px solid var(--line);
+    }
+    .databar.open { display: flex; }
+    .databar button {
+      background: transparent; color: var(--fg); border: none; flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+      padding: 0 10px; transition: background .15s;
+    }
+    .databar button + button { border-left: 1px solid var(--line); }
+    .databar button:hover { background: var(--line); }
+    .databar #closeDataOverlayBtn { flex: 0 0 auto; }
+
+    .field {
+      background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+      border-radius: 0; width: 100%; padding: 14px; display: block;
+    }
+    .field:focus { border-color: var(--fg); outline: none; }
+    .field::placeholder { color: var(--muted); }
+    ::-webkit-calendar-picker-indicator { filter: invert(1); }
+    label.lbl {
+      display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted); margin: 0 0 6px;
+    }
+
+    .btn {
+      border: 1px solid var(--fg); background: var(--line); color: var(--fg);
+      font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      padding: 14px 18px; transition: background .15s;
+    }
+    .btn:hover { background: #1a2b50; }
+    .btn.ghost { background: var(--bg); }
+    .btn.ghost:hover { background: var(--panel); }
+    .btn.small { padding: 6px 12px; font-size: 11px; }
+
+    section.tab { display: none; padding-top: 24px; }
+    section.tab.active { display: block; }
+
+    .status-pill {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .15em;
+      text-transform: uppercase; color: var(--muted); border: 1px solid var(--line);
+      padding: 5px 12px;
+    }
+    .status-pill.running { color: var(--fg); }
+    .timer-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
       font-variant-numeric: tabular-nums lining-nums;
-      letter-spacing: 0.1em;
+      letter-spacing: .1em;
+      font-size: clamp(48px, 14vw, 84px); font-weight: 800; line-height: 1.1;
+      margin: 20px 0 28px;
     }
-    /* Force date and time picker icons to be crisp white */
-    ::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      opacity: 1;
-      cursor: pointer;
+    .stack > * + * { margin-top: 14px; }
+    .row { display: flex; gap: 14px; }
+    .row > * { flex: 1; }
+    @media (max-width: 520px) { .row { flex-direction: column; } .row > * { flex: none; } }
+
+    .history-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .total-hours { font-size: 28px; font-weight: 800; }
+    .total-hours small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .toolbar { display: flex; gap: 14px; margin-top: 20px; }
+    .toolbar select { flex: 0 0 auto; width: auto; padding: 10px; }
+    .toolbar input { flex: 1; padding: 10px; }
+    @media (max-width: 520px) { .toolbar { flex-direction: column; } .toolbar select, .toolbar input { width: 100%; } }
+
+    .log-card {
+      border: 1px solid var(--line); background: var(--panel); padding: 16px;
+      display: flex; justify-content: space-between; gap: 14px; align-items: flex-start;
     }
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    .log-card .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .log-card .meta span + span::before { content: " • "; }
+    .log-card .notes { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .log-card .actions { display: flex; gap: 8px; flex: 0 0 auto; }
+    .log-card h3 { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+    .hrs-badge {
+      display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; border: 1px solid var(--line); padding: 3px 8px; color: var(--fg);
     }
-    ::-webkit-scrollbar-track {
-      background: #000000;
+    #historyList { margin-top: 20px; }
+    .empty {
+      border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+      padding: 32px; text-align: center; font-size: 13px;
     }
-    ::-webkit-scrollbar-thumb {
-      background: #121e36;
+
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 50; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,.85); padding: 16px;
     }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto; padding: 24px;
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-head h2 { font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; }
+    .modal-close:hover { color: var(--fg); }
+
+    #toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+      padding: 12px 20px; font-size: 13px; opacity: 0; pointer-events: none;
+      transition: opacity .25s, transform .25s; z-index: 60; max-width: 90vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .hint { font-size: 11px; color: var(--muted); margin-top: 10px; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-black text-white">
+<body>
 
-  <!-- TOP NAVIGATION BAR / DATA OVERLAY BAR -->
-  <header class="w-full border-b border-[#121e36] bg-[#000000] sticky top-0 z-30">
-    
-    <!-- Standard 3-Tab Bar -->
-    <div id="standardNavBar" class="flex items-center justify-between w-full h-14">
-      <nav class="flex-1 grid grid-cols-3 h-full">
-        <button id="navLive" onclick="switchTab('live')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white bg-[#080d1a] px-2">
-          <i data-lucide="timer" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Active Tracker</span>
-        </button>
-        <button id="navHistory" onclick="switchTab('history')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-slate-400 hover:text-white hover:bg-[#080d1a] px-2">
-          <i data-lucide="history" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Service History</span>
-        </button>
-        <button id="navManual" onclick="switchTab('manual')" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase text-slate-400 hover:text-white hover:bg-[#080d1a] px-2">
-          <i data-lucide="clock" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Log Past Hours</span>
-        </button>
-      </nav>
-
-      <!-- Database Cylinder Button -->
-      <button id="openDataOverlayBtn" onclick="toggleDataOverlay(true)" title="Data Management" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#080d1a]">
-        <i data-lucide="database" class="w-6 h-6 text-white"></i>
-      </button>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main">
+      <button id="navLive" onclick="switchTab('live')" class="active" aria-label="Live tracker">Live</button>
+      <button id="navHistory" onclick="switchTab('history')" aria-label="Service history">History</button>
+      <button id="navManual" onclick="switchTab('manual')" aria-label="Log past hours">Log Hours</button>
+      <button id="openDataOverlayBtn" onclick="toggleDataOverlay(true)" title="Data management" aria-label="Data menu">Data</button>
+    </nav>
+    <div class="databar" id="dataOverlayBar" role="toolbar" aria-label="Data management">
+      <button onclick="directExportMarkdown()">Resume .md</button>
+      <button onclick="directExportCSV()">CSV</button>
+      <button onclick="directExportJSON()">Backup .json</button>
+      <button onclick="triggerImportFileDialog()">Import</button>
+      <button id="closeDataOverlayBtn" onclick="toggleDataOverlay(false)" title="Close data menu" aria-label="Close data menu">&#10005;</button>
     </div>
-
-    <!-- Data Management Overlay Bar -->
-    <div id="dataOverlayBar" class="hidden flex items-center justify-between w-full h-14 bg-[#080d1a] border-b border-[#121e36]">
-      <div class="flex-1 grid grid-cols-3 h-full">
-        <button onclick="directExportMarkdown()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-2">
-          <i data-lucide="file-text" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Export Info</span>
-        </button>
-        <button onclick="directExportJSON()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase border-r border-[#121e36] text-white hover:bg-[#121e36] px-2">
-          <i data-lucide="download" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Export Data</span>
-        </button>
-        <button onclick="triggerImportFileDialog()" class="h-full flex items-center justify-center gap-2 text-center font-semibold text-xs md:text-sm tracking-wider uppercase text-white hover:bg-[#121e36] px-2">
-          <i data-lucide="upload" class="w-6 h-6 text-white shrink-0"></i>
-          <span class="hidden md:inline truncate">Import Data</span>
-        </button>
-      </div>
-
-      <!-- Close Overlay Button -->
-      <button onclick="toggleDataOverlay(false)" title="Close Data Menu" class="h-full px-4 border-l border-[#121e36] flex items-center justify-center text-white hover:bg-[#121e36]">
-        <i data-lucide="x" class="w-6 h-6 text-white"></i>
-      </button>
-    </div>
-
-    <!-- Hidden Native File Input for Import -->
-    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="handleImportFile(event)">
   </header>
 
-  <!-- MAIN CONTENT CONTAINER -->
-  <main class="flex-1 w-full px-4 sm:px-8 py-6">
+  <main class="wrap">
 
-    <!-- ==========================================
-         TAB 1: ACTIVE TRACKER
-         ========================================== -->
-    <section id="tabLive" class="w-full">
-      <div class="space-y-6 w-full">
-        <div class="flex justify-between items-center border-b border-[#121e36] pb-3">
-          <span id="timerStatus" class="text-xs font-semibold text-slate-400 tracking-widest uppercase border border-[#121e36] px-3 py-1">
-            READY TO START
-          </span>
+    <section id="tabLive" class="tab active" aria-label="Live timer">
+      <div style="text-align:center;">
+        <span id="timerStatus" class="status-pill">Ready to start</span>
+        <div id="timerDisplay" class="timer-display" role="timer" aria-live="off">00:00:00</div>
+      </div>
+      <div class="stack">
+        <div>
+          <label class="lbl" for="liveActivity">Activity</label>
+          <input type="text" id="liveActivity" list="activitySuggestions" placeholder="Activity name" class="field" autocomplete="off">
         </div>
-
-        <div class="py-8 text-center space-y-2">
-          <div id="timerDisplay" class="timer-font text-5xl sm:text-6xl font-extrabold text-white">
-            00:00:00
-          </div>
+        <div>
+          <label class="lbl" for="liveNotes">Notes</label>
+          <textarea id="liveNotes" rows="3" placeholder="Additional details..." class="field"></textarea>
         </div>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name</label>
-            <input type="text" id="liveActivity" list="activitySuggestions" placeholder="Activity Name" class="w-full p-4 navy-input">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes / Details</label>
-            <textarea id="liveNotes" rows="3" placeholder="Additional details..." class="w-full p-4 navy-input"></textarea>
-          </div>
-        </div>
-
-        <div class="pt-4 flex gap-4">
-          <button id="startTimerBtn" onclick="toggleTimer()" class="flex-1 py-4 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white flex items-center justify-center gap-2">
-            <i data-lucide="play" class="w-5 h-5 text-white"></i>
-            <span>Start Session</span>
-          </button>
-          <button id="resetTimerBtn" onclick="resetTimer()" class="py-4 px-6 bg-black text-white hover:bg-[#080d1a] border border-white font-bold tracking-wider uppercase">
-            Reset
-          </button>
+        <div class="row">
+          <button id="startTimerBtn" onclick="toggleTimer()" class="btn">Start session</button>
+          <button id="resetTimerBtn" onclick="resetTimer()" class="btn ghost">Reset</button>
         </div>
       </div>
+      <p class="hint">The timer keeps running even if you close the page &mdash; it restores automatically when you come back.</p>
     </section>
 
-    <!-- ==========================================
-         TAB 2: SERVICE HISTORY
-         ========================================== -->
-    <section id="tabHistory" class="hidden w-full space-y-6">
-      
-      <!-- Total Hours & Filter Bar -->
-      <div class="border border-[#121e36] bg-[#080d1a] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Accumulated Service</span>
-          <span id="totalHoursDisplay" class="text-3xl font-extrabold text-white">0.00 Hours</span>
-        </div>
-
-        <div class="w-full sm:w-auto flex items-center gap-2">
-          <label for="sortOrder" class="text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Sort By:</label>
-          <select id="sortOrder" onchange="renderHistory()" class="navy-input p-2 text-xs uppercase tracking-wider w-full sm:w-auto">
-            <option value="date-desc">Date (Newest First)</option>
-            <option value="date-asc">Date (Oldest First)</option>
-            <option value="title-custom">Activity (Custom Sort)</option>
-            <option value="duration-desc">Duration (Longest First)</option>
-            <option value="duration-asc">Duration (Shortest First)</option>
-          </select>
-        </div>
+    <section id="tabHistory" class="tab" aria-label="Service history">
+      <div class="history-head">
+        <div class="total-hours"><span id="totalHoursDisplay">0.00</span> hours<small id="sessionCount">0 sessions</small></div>
       </div>
-
-      <!-- Search Input -->
-      <div>
-        <input type="text" id="searchHistoryInput" oninput="renderHistory()" placeholder="Search logs by title or details..." class="w-full p-3 navy-input text-sm">
+      <div class="toolbar">
+        <select id="sortOrder" onchange="renderHistory()" class="field" aria-label="Sort order">
+          <option value="date-desc">Date &darr; Newest first</option>
+          <option value="date-asc">Date &uarr; Oldest first</option>
+          <option value="duration-desc">Duration &darr; Longest first</option>
+          <option value="duration-asc">Duration &uarr; Shortest first</option>
+          <option value="title-custom">Title A&ndash;Z</option>
+        </select>
+        <input type="search" id="searchHistoryInput" oninput="renderHistory()" placeholder="Search logs by title or details..." class="field" aria-label="Search history">
       </div>
-
-      <!-- Logs Container -->
-      <div id="historyList" class="space-y-4">
-        <!-- Rendered dynamically -->
-      </div>
+      <div id="historyList"></div>
     </section>
 
-    <!-- ==========================================
-         TAB 3: LOG PAST HOURS
-         ========================================== -->
-    <section id="tabManual" class="hidden w-full space-y-6">
-      <div class="border-b border-[#121e36] pb-3">
-        <h2 class="text-xs font-semibold text-slate-400 tracking-widest uppercase">Manual Event Log Entry</h2>
-      </div>
-
-      <form id="manualEntryForm" onsubmit="handleManualSubmit(event)" class="space-y-4">
+    <section id="tabManual" class="tab" aria-label="Log past hours">
+      <form id="manualEntryForm" onsubmit="handleManualSubmit(event)" class="stack">
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name *</label>
-          <input type="text" id="manualActivity" list="activitySuggestions" placeholder="Activity Name" required class="w-full p-4 navy-input">
+          <label class="lbl" for="manualActivity">Activity</label>
+          <input type="text" id="manualActivity" list="activitySuggestions" placeholder="Activity name" required class="field" autocomplete="off">
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date *</label>
-            <input type="date" id="manualDate" required class="w-full p-4 navy-input">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Start Time *</label>
-            <input type="time" id="manualStartTime" required class="w-full p-4 navy-input">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">End Time *</label>
-            <input type="time" id="manualEndTime" required class="w-full p-4 navy-input">
-          </div>
-        </div>
-
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes / Details</label>
-          <textarea id="manualNotes" rows="3" placeholder="Notes / Details" class="w-full p-4 navy-input"></textarea>
+          <label class="lbl" for="manualDate">Date</label>
+          <input type="date" id="manualDate" required class="field">
         </div>
-
-        <button type="submit" class="w-full py-4 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white flex items-center justify-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-white"></i>
-          <span>Save Log Entry</span>
-        </button>
+        <div class="row">
+          <div>
+            <label class="lbl" for="manualStartTime">Start time</label>
+            <input type="time" id="manualStartTime" required class="field">
+          </div>
+          <div>
+            <label class="lbl" for="manualEndTime">End time</label>
+            <input type="time" id="manualEndTime" required class="field">
+          </div>
+        </div>
+        <div>
+          <label class="lbl" for="manualNotes">Notes / Details</label>
+          <textarea id="manualNotes" rows="3" placeholder="Notes / details" class="field"></textarea>
+        </div>
+        <button type="submit" class="btn">Save entry</button>
       </form>
     </section>
 
+    <datalist id="activitySuggestions"></datalist>
   </main>
 
-  <!-- SHARED AUTOCOMPLETE DATASET -->
-  <datalist id="activitySuggestions">
-    <!-- Populated dynamically with custom sorting rule -->
-  </datalist>
-
-  <!-- EDIT MODAL -->
-  <div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-    <div class="w-full max-w-lg bg-[#080d1a] border border-[#121e36] p-6 space-y-4">
-      <div class="flex justify-between items-center border-b border-[#121e36] pb-3">
-        <h3 class="text-xs font-semibold uppercase tracking-widest text-slate-400">Edit Log Entry</h3>
-        <button id="closeEditModalBtn" onclick="closeEditModal()" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5 text-white"></i>
-        </button>
+  <div id="editModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="editModalTitle">Edit entry</h2>
+        <button class="modal-close" onclick="closeEditModal()" aria-label="Close">&#10005;</button>
       </div>
-
-      <form id="editEntryForm" onsubmit="handleEditSubmit(event)" class="space-y-4">
+      <form id="editEntryForm" onsubmit="handleEditSubmit(event)" class="stack">
         <input type="hidden" id="editEntryId">
-        
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Activity Name *</label>
-          <input type="text" id="editActivity" list="activitySuggestions" required class="w-full p-3 navy-input">
+          <label class="lbl" for="editActivity">Activity</label>
+          <input type="text" id="editActivity" list="activitySuggestions" required class="field">
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date *</label>
-            <input type="date" id="editDate" required class="w-full p-3 navy-input">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Start Time *</label>
-            <input type="time" id="editStartTime" required class="w-full p-3 navy-input">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">End Time *</label>
-            <input type="time" id="editEndTime" required class="w-full p-3 navy-input">
-          </div>
-        </div>
-
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Notes</label>
-          <textarea id="editNotes" rows="2" class="w-full p-3 navy-input"></textarea>
+          <label class="lbl" for="editDate">Date</label>
+          <input type="date" id="editDate" required class="field">
         </div>
-
-        <div class="flex gap-3 pt-2">
-          <button type="submit" class="flex-1 py-3 bg-[#121e36] hover:bg-slate-800 text-white font-bold tracking-wider uppercase border border-white">
-            Save Changes
-          </button>
-          <button type="button" id="cancelEditBtn" onclick="closeEditModal()" class="py-3 px-4 bg-black text-white hover:bg-[#080d1a] border border-white font-bold tracking-wider uppercase">
-            Cancel
-          </button>
+        <div class="row">
+          <div>
+            <label class="lbl" for="editStartTime">Start time</label>
+            <input type="time" id="editStartTime" required class="field">
+          </div>
+          <div>
+            <label class="lbl" for="editEndTime">End time</label>
+            <input type="time" id="editEndTime" required class="field">
+          </div>
+        </div>
+        <div>
+          <label class="lbl" for="editNotes">Notes</label>
+          <textarea id="editNotes" rows="2" class="field"></textarea>
+        </div>
+        <div class="row">
+          <button type="submit" class="btn">Save changes</button>
+          <button type="button" onclick="closeEditModal()" class="btn ghost">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <div id="toast" role="status"></div>
+  <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(event)">
   <script>
-    // Inline Service Worker for Instant Boot & Auto-Updating Cache Management
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        const CACHE_NAME = 'cs-tracker-v2';
-        const ASSETS = [
-          './',
-          './index.html',
-          './manifest.json',
-          'https://cdn.tailwindcss.com',
-          'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-          'https://unpkg.com/lucide@latest'
-        ];
-        self.addEventListener('install', (e) => {
-          self.skipWaiting();
-          e.waitUntil(
-            caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-          );
-        });
-        self.addEventListener('activate', (e) => {
-          e.waitUntil(
-            caches.keys().then((keys) => {
-              return Promise.all(
-                keys.map((key) => {
-                  if (key !== CACHE_NAME) {
-                    return caches.delete(key);
-                  }
-                })
-              );
-            }).then(() => self.clients.claim())
-          );
-        });
-        self.addEventListener('fetch', (e) => {
-          e.respondWith(
-            caches.match(e.request).then((res) => res || fetch(e.request))
-          );
-        });
-      `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(() => {});
-    }
+    'use strict';
 
-    // Global State
-    let serviceLogs = JSON.parse(localStorage.getItem('cs_service_logs') || '[]');
-    let timerState = JSON.parse(localStorage.getItem('cs_timer_state') || '{"running": false, "startTime": null, "elapsed": 0, "activity": "", "notes": ""}');
+    const OWNER_NAME = 'Shawn Meendering';
+    const LS_LOGS = 'cs_service_logs';
+    const LS_TIMER = 'cs_timer_state';
+
+    let serviceLogs = [];
+    try { serviceLogs = JSON.parse(localStorage.getItem(LS_LOGS) || '[]'); } catch (e) { serviceLogs = []; }
+    if (!Array.isArray(serviceLogs)) serviceLogs = [];
+
+    let timerState = { running: false, startTime: null, elapsed: 0, activity: '', notes: '' };
+    try { timerState = Object.assign(timerState, JSON.parse(localStorage.getItem(LS_TIMER) || '{}')); } catch (e) {}
     let timerInterval = null;
 
-    // Custom Sorting Comparison Hierarchy:
-    // 1. Symbols/Punctuation
-    // 2. Numbers (0-9)
-    // 3. Uppercase Letters (A-Z)
-    // 4. Lowercase Letters (a-z)
+    function $(id) { return document.getElementById(id); }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function showToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function downloadFile(content, fileName, contentType) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([content], { type: contentType }));
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function totalSeconds() {
+      return serviceLogs.reduce((acc, i) => acc + (i.durationSeconds || 0), 0);
+    }
+
     function customCharPriority(ch) {
       if (!ch) return 0;
       const code = ch.charCodeAt(0);
-      if (code >= 48 && code <= 57) return 2; // Numbers
-      if (code >= 65 && code <= 90) return 3; // Uppercase A-Z
-      if (code >= 97 && code <= 122) return 4; // Lowercase a-z
-      return 1; // Symbols / Special Characters
+      if (code >= 48 && code <= 57) return 2;
+      if (code >= 65 && code <= 90) return 3;
+      if (code >= 97 && code <= 122) return 4;
+      return 1;
     }
-
-    function compareCustomOrder(strA, strB) {
-      const len = Math.min(strA.length, strB.length);
+    function compareCustomOrder(a, b) {
+      const len = Math.min(a.length, b.length);
       for (let i = 0; i < len; i++) {
-        const charA = strA[i];
-        const charB = strB[i];
-        if (charA !== charB) {
-          const prioA = customCharPriority(charA);
-          const prioB = customCharPriority(charB);
-          if (prioA !== prioB) return prioA - prioB;
-          return charA.localeCompare(charB);
+        if (a[i] !== b[i]) {
+          const pa = customCharPriority(a[i]), pb = customCharPriority(b[i]);
+          if (pa !== pb) return pa - pb;
+          return a[i].localeCompare(b[i]);
         }
       }
-      return strA.length - strB.length;
+      return a.length - b.length;
     }
 
-    // Initialize Application
-    window.onload = function() {
-      lucide.createIcons();
-      setDefaultDates();
-      updateAutocompleteOptions();
-      renderHistory();
-      restoreTimerState();
-    };
+    const TAB_IDS = { live: 'tabLive', history: 'tabHistory', manual: 'tabManual' };
+    const NAV_IDS = { live: 'navLive', history: 'navHistory', manual: 'navManual' };
 
-    function setDefaultDates() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('manualDate').value = today;
-    }
-
-    // Navigation Tab Switcher
     function switchTab(tabKey) {
-      document.getElementById('tabLive').classList.add('hidden');
-      document.getElementById('tabHistory').classList.add('hidden');
-      document.getElementById('tabManual').classList.add('hidden');
-
-      const navLive = document.getElementById('navLive');
-      const navHistory = document.getElementById('navHistory');
-      const navManual = document.getElementById('navManual');
-
-      [navLive, navHistory, navManual].forEach(btn => {
-        btn.classList.remove('text-white', 'bg-[#080d1a]');
-        btn.classList.add('text-slate-400');
+      Object.keys(TAB_IDS).forEach(k => {
+        $(TAB_IDS[k]).classList.toggle('active', k === tabKey);
+        $(NAV_IDS[k]).classList.toggle('active', k === tabKey);
       });
-
-      if (tabKey === 'live') {
-        document.getElementById('tabLive').classList.remove('hidden');
-        navLive.classList.add('text-white', 'bg-[#080d1a]');
-      } else if (tabKey === 'history') {
-        document.getElementById('tabHistory').classList.remove('hidden');
-        navHistory.classList.add('text-white', 'bg-[#080d1a]');
-        renderHistory();
-      } else if (tabKey === 'manual') {
-        document.getElementById('tabManual').classList.remove('hidden');
-        navManual.classList.add('text-white', 'bg-[#080d1a]');
-      }
+      if (timerState.running && tabKey !== 'live') saveTimerState();
     }
 
-    // Data Overlay Toggle
-    function toggleDataOverlay(show) {
-      const standardNavBar = document.getElementById('standardNavBar');
-      const dataOverlayBar = document.getElementById('dataOverlayBar');
+    function toggleDataOverlay(show) { $('dataOverlayBar').classList.toggle('open', show); }
 
-      if (show) {
-        standardNavBar.classList.add('hidden');
-        dataOverlayBar.classList.remove('hidden');
-      } else {
-        dataOverlayBar.classList.add('hidden');
-        standardNavBar.classList.remove('hidden');
-      }
-    }
-
-    // Autocomplete Suggestions Generator
-    function updateAutocompleteOptions() {
-      const datalist = document.getElementById('activitySuggestions');
-      datalist.innerHTML = '';
-
-      const uniqueActivities = Array.from(new Set(
-        serviceLogs.map(log => log.activity).filter(Boolean)
-      )).sort(compareCustomOrder);
-
-      uniqueActivities.forEach(activity => {
-        const option = document.createElement('option');
-        option.value = activity;
-        datalist.appendChild(option);
-      });
-    }
-
-    // Save Data to Local Storage
     function saveLogs() {
-      localStorage.setItem('cs_service_logs', JSON.stringify(serviceLogs));
+      localStorage.setItem(LS_LOGS, JSON.stringify(serviceLogs));
       updateAutocompleteOptions();
     }
 
-    // Active Timer Management
+    function updateAutocompleteOptions() {
+      const titles = [...new Set(serviceLogs.map(l => l.activity))].sort(compareCustomOrder);
+      $('activitySuggestions').innerHTML = titles.map(t => `<option value="${escapeHtml(t)}"></option>`).join('');
+    }
+
     function toggleTimer() {
       if (!timerState.running) {
         timerState.running = true;
         timerState.startTime = Date.now() - (timerState.elapsed || 0);
-        timerState.activity = document.getElementById('liveActivity').value;
-        timerState.notes = document.getElementById('liveNotes').value;
-        
+        timerState.activity = $('liveActivity').value;
+        timerState.notes = $('liveNotes').value;
         timerInterval = setInterval(updateTimerUI, 1000);
-        updateTimerButtonState();
+        updateTimerUI();
       } else {
-        // Stop & Save Session
         timerState.running = false;
         clearInterval(timerInterval);
-        
         const finalElapsedSec = Math.floor((Date.now() - timerState.startTime) / 1000);
-        const activityName = document.getElementById('liveActivity').value.trim() || 'General Community Service';
-        const notes = document.getElementById('liveNotes').value.trim();
+        const activityName = $('liveActivity').value.trim() || 'General Community Service';
+        const notes = $('liveNotes').value.trim();
 
         if (finalElapsedSec >= 5) {
           const now = new Date();
           const startDate = new Date(Date.now() - finalElapsedSec * 1000);
-          
-          const newLog = {
+          serviceLogs.push({
             id: 'log_' + Date.now(),
             activity: activityName,
-            date: startDate.toISOString().split('T')[0],
-            startTime: startDate.toTimeString().substring(0, 5),
-            endTime: now.toTimeString().substring(0, 5),
+            date: startDate.toISOString().slice(0, 10),
+            startTime: startDate.toTimeString().slice(0, 5),
+            endTime: now.toTimeString().slice(0, 5),
             durationSeconds: finalElapsedSec,
             notes: notes
-          };
-
-          serviceLogs.push(newLog);
+          });
           saveLogs();
+          showToast('Session saved: ' + (finalElapsedSec / 3600).toFixed(2) + ' hrs logged');
+        } else {
+          showToast('Session under 5 seconds — not saved');
         }
-
-        resetTimer();
+        resetTimer(false);
         switchTab('history');
       }
       saveTimerState();
     }
 
-    function resetTimer() {
+    function resetTimer(clearForm) {
       timerState = { running: false, startTime: null, elapsed: 0, activity: '', notes: '' };
       clearInterval(timerInterval);
-      document.getElementById('timerDisplay').textContent = '00:00:00';
-      document.getElementById('liveActivity').value = '';
-      document.getElementById('liveNotes').value = '';
+      $('timerDisplay').textContent = '00:00:00';
+      if (clearForm !== false) {
+        $('liveActivity').value = '';
+        $('liveNotes').value = '';
+      }
       updateTimerButtonState();
       saveTimerState();
     }
 
     function saveTimerState() {
       if (timerState.running) {
-        timerState.activity = document.getElementById('liveActivity').value;
-        timerState.notes = document.getElementById('liveNotes').value;
+        timerState.activity = $('liveActivity').value;
+        timerState.notes = $('liveNotes').value;
       }
-      localStorage.setItem('cs_timer_state', JSON.stringify(timerState));
+      localStorage.setItem(LS_TIMER, JSON.stringify(timerState));
     }
 
     function restoreTimerState() {
       if (timerState.running && timerState.startTime) {
-        document.getElementById('liveActivity').value = timerState.activity || '';
-        document.getElementById('liveNotes').value = timerState.notes || '';
+        $('liveActivity').value = timerState.activity || '';
+        $('liveNotes').value = timerState.notes || '';
         timerInterval = setInterval(updateTimerUI, 1000);
         updateTimerUI();
-        updateTimerButtonState();
       }
     }
 
     function updateTimerUI() {
       if (!timerState.running) return;
-      const totalSec = Math.floor((Date.now() - timerState.startTime) / 1000);
-      
-      const hrs = Math.floor(totalSec / 3600).toString().padStart(2, '0');
-      const mins = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
-      const secs = (totalSec % 60).toString().padStart(2, '0');
-
-      document.getElementById('timerDisplay').textContent = `${hrs}:${mins}:${secs}`;
+      const totalSec = Math.max(0, Math.floor((Date.now() - timerState.startTime) / 1000));
+      const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSec % 60).padStart(2, '0');
+      $('timerDisplay').textContent = h + ':' + m + ':' + s;
+      saveTimerState();
     }
 
     function updateTimerButtonState() {
-      const btn = document.getElementById('startTimerBtn');
-      const statusText = document.getElementById('timerStatus');
-
+      const btn = $('startTimerBtn'), status = $('timerStatus');
       if (timerState.running) {
-        btn.innerHTML = `<i data-lucide="square" class="w-5 h-5 text-white"></i><span>Stop & Save Session</span>`;
-        statusText.textContent = 'SESSION IN PROGRESS';
-        statusText.classList.remove('text-slate-400');
-        statusText.classList.add('text-white');
+        btn.textContent = 'Stop & save session';
+        status.textContent = 'Session in progress';
+        status.classList.add('running');
       } else {
-        btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 text-white"></i><span>Start Session</span>`;
-        statusText.textContent = 'READY TO START';
-        statusText.classList.remove('text-white');
-        statusText.classList.add('text-slate-400');
+        btn.textContent = 'Start session';
+        status.textContent = 'Ready to start';
+        status.classList.remove('running');
       }
-      lucide.createIcons();
     }
 
-    // Manual Form Submission
+    function setDefaultDates() {
+      $('manualDate').value = new Date().toISOString().slice(0, 10);
+    }
+
+    function computeDuration(date, startTime, endTime) {
+      const start = new Date(date + 'T' + startTime);
+      const end = new Date(date + 'T' + endTime);
+      let sec = Math.floor((end - start) / 1000);
+      if (sec < 0) sec += 86400;
+      return sec;
+    }
+
     function handleManualSubmit(e) {
       e.preventDefault();
-      
-      const activity = document.getElementById('manualActivity').value.trim();
-      const date = document.getElementById('manualDate').value;
-      const startTime = document.getElementById('manualStartTime').value;
-      const endTime = document.getElementById('manualEndTime').value;
-      const notes = document.getElementById('manualNotes').value.trim();
+      const date = $('manualDate').value;
+      const startTime = $('manualStartTime').value;
+      const endTime = $('manualEndTime').value;
+      const durationSec = computeDuration(date, startTime, endTime);
 
-      const start = new Date(`${date}T${startTime}`);
-      const end = new Date(`${date}T${endTime}`);
-
-      let durationSec = Math.floor((end - start) / 1000);
-      if (durationSec < 0) durationSec += 86400; // Overnight adjustment
-
-      const newLog = {
+      serviceLogs.push({
         id: 'log_' + Date.now(),
-        activity,
-        date,
-        startTime,
-        endTime,
+        activity: $('manualActivity').value.trim(),
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
         durationSeconds: durationSec,
-        notes
-      };
-
-      serviceLogs.push(newLog);
+        notes: $('manualNotes').value.trim()
+      });
       saveLogs();
 
-      // Reset form
-      document.getElementById('manualActivity').value = '';
-      document.getElementById('manualNotes').value = '';
+      $('manualActivity').value = '';
+      $('manualNotes').value = '';
+      $('manualStartTime').value = '';
+      $('manualEndTime').value = '';
       setDefaultDates();
-
+      showToast('Entry saved');
       switchTab('history');
     }
 
-    // Render Service History List & Total Hours
     function renderHistory() {
-      const container = document.getElementById('historyList');
-      const searchQuery = document.getElementById('searchHistoryInput').value.toLowerCase();
-      const sortMode = document.getElementById('sortOrder').value;
+      const container = $('historyList');
+      const q = $('searchHistoryInput').value.toLowerCase();
+      const sortMode = $('sortOrder').value;
 
-      let filtered = serviceLogs.filter(log => 
-        log.activity.toLowerCase().includes(searchQuery) ||
-        (log.notes && log.notes.toLowerCase().includes(searchQuery))
+      $('totalHoursDisplay').textContent = (totalSeconds() / 3600).toFixed(2);
+      $('sessionCount').textContent = serviceLogs.length + (serviceLogs.length === 1 ? ' session' : ' sessions');
+
+      let filtered = serviceLogs.filter(l =>
+        l.activity.toLowerCase().includes(q) || (l.notes && l.notes.toLowerCase().includes(q))
       );
-
-      // Sorting Logic
       filtered.sort((a, b) => {
         if (sortMode === 'date-desc') return new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime);
         if (sortMode === 'date-asc') return new Date(a.date + 'T' + a.startTime) - new Date(b.date + 'T' + b.startTime);
@@ -602,193 +519,167 @@
         return 0;
       });
 
-      // Total Hours Calculation
-      const totalSec = serviceLogs.reduce((acc, item) => acc + (item.durationSeconds || 0), 0);
-      const totalHours = (totalSec / 3600).toFixed(2);
-      document.getElementById('totalHoursDisplay').textContent = `${totalHours} Hours`;
-
       if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="border border-[#121e36] bg-[#080d1a] p-8 text-center text-slate-400 text-sm">
-            No service records found.
-          </div>
-        `;
+        container.innerHTML = '<div class="empty">No service records found.</div>';
         return;
       }
 
       container.innerHTML = filtered.map(log => {
-        const hrs = (log.durationSeconds / 3600).toFixed(2);
-        
-        // Dynamic SVG title fallback for extremely long titles
-        const fullTitle = escapeHtml(log.activity);
-        const isLongTitle = fullTitle.length > 28;
-        const displayTitle = isLongTitle ? fullTitle.substring(0, 25) + '...' : fullTitle;
-
+        const hrs = ((log.durationSeconds || 0) / 3600).toFixed(2);
+        const title = escapeHtml(log.activity);
         return `
-          <div class="border border-[#121e36] bg-[#080d1a] p-4 flex flex-col justify-between gap-4">
-            <div class="flex justify-between items-start gap-4">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  ${isLongTitle ? `
-                    <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" title="${fullTitle}">
-                      <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                  ` : ''}
-                  <h3 class="font-bold text-white text-base truncate" title="${fullTitle}">${displayTitle}</h3>
-                </div>
-                <div class="text-xs text-slate-400 space-x-2 mt-1">
-                  <span>${log.date}</span>
-                  <span>•</span>
-                  <span>${log.startTime} - ${log.endTime}</span>
-                </div>
-              </div>
-              <div class="text-right shrink-0">
-                <span class="text-lg font-extrabold text-white">${hrs} hrs</span>
-              </div>
+          <div class="log-card" style="margin-bottom:14px;">
+            <div style="min-width:0;">
+              <h3 title="${title}">${title}</h3>
+              <div class="meta"><span>${escapeHtml(log.date)}</span><span>${escapeHtml(log.startTime)}&ndash;${escapeHtml(log.endTime)}</span></div>
+              <span class="hrs-badge">${hrs} hrs</span>
+              ${log.notes ? `<div class="notes">${escapeHtml(log.notes)}` : ''}
             </div>
-
-            ${log.notes ? `<p class="text-xs text-slate-300 border-t border-[#121e36] pt-2 break-words">${escapeHtml(log.notes)}</p>` : ''}
-
-            <div class="flex justify-end gap-2 pt-2 border-t border-[#121e36]">
-              <button onclick="openEditModal('${log.id}')" class="px-3 py-1 text-xs border border-white text-white hover:bg-[#121e36] font-semibold">
-                Edit
-              </button>
-              <button onclick="deleteLog('${log.id}')" class="px-3 py-1 text-xs border border-white text-white hover:bg-[#121e36] font-semibold">
-                Delete
-              </button>
+            <div class="actions">
+              <button onclick="openEditModal('${log.id}')" class="btn ghost small">Edit</button>
+              <button onclick="deleteLog('${log.id}')" class="btn ghost small">Delete</button>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
-    // Log Deletion
     function deleteLog(id) {
-      serviceLogs = serviceLogs.filter(log => log.id !== id);
+      const log = serviceLogs.find(l => l.id === id);
+      if (!log) return;
+      if (!confirm('Delete "' + log.activity + '" (' + ((log.durationSeconds || 0) / 3600).toFixed(2) + ' hrs)?')) return;
+      serviceLogs = serviceLogs.filter(l => l.id !== id);
       saveLogs();
       renderHistory();
+      showToast('Entry deleted');
     }
 
-    // Edit Log Modal Handler
     function openEditModal(id) {
       const log = serviceLogs.find(l => l.id === id);
       if (!log) return;
-
-      document.getElementById('editEntryId').value = log.id;
-      document.getElementById('editActivity').value = log.activity;
-      document.getElementById('editDate').value = log.date;
-      document.getElementById('editStartTime').value = log.startTime;
-      document.getElementById('editEndTime').value = log.endTime;
-      document.getElementById('editNotes').value = log.notes || '';
-
-      document.getElementById('editModal').classList.remove('hidden');
+      $('editEntryId').value = log.id;
+      $('editActivity').value = log.activity;
+      $('editDate').value = log.date;
+      $('editStartTime').value = log.startTime;
+      $('editEndTime').value = log.endTime;
+      $('editNotes').value = log.notes || '';
+      $('editModal').classList.add('open');
     }
 
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-    }
+    function closeEditModal() { $('editModal').classList.remove('open'); }
 
     function handleEditSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('editEntryId').value;
-      const log = serviceLogs.find(l => l.id === id);
-      if (!log) return;
-
-      log.activity = document.getElementById('editActivity').value.trim();
-      log.date = document.getElementById('editDate').value;
-      log.startTime = document.getElementById('editStartTime').value;
-      log.endTime = document.getElementById('editEndTime').value;
-      log.notes = document.getElementById('editNotes').value.trim();
-
-      const start = new Date(`${log.date}T${log.startTime}`);
-      const end = new Date(`${log.date}T${log.endTime}`);
-      let durationSec = Math.floor((end - start) / 1000);
-      if (durationSec < 0) durationSec += 86400;
-      log.durationSeconds = durationSec;
-
+      const log = serviceLogs.find(l => l.id === $('editEntryId').value);
+      if (!log) return closeEditModal();
+      log.activity = $('editActivity').value.trim();
+      log.date = $('editDate').value;
+      log.startTime = $('editStartTime').value;
+      log.endTime = $('editEndTime').value;
+      log.notes = $('editNotes').value.trim();
+      log.durationSeconds = computeDuration(log.date, log.startTime, log.endTime);
       saveLogs();
-      closeEditModal();
       renderHistory();
+      closeEditModal();
+      showToast('Entry updated');
     }
 
-    // Direct Markdown Export (.md file download)
-    function directExportMarkdown() {
-      if (serviceLogs.length === 0) {
-        alert('No service logs available to export.');
-        return;
-      }
-
-      const totalSec = serviceLogs.reduce((acc, i) => acc + (i.durationSeconds || 0), 0);
-      const totalHours = (totalSec / 3600).toFixed(2);
-
-      let mdContent = `# Community Service Log Summary\n\n`;
-      mdContent += `**Total Hours Logged:** ${totalHours} Hours\n\n`;
-      mdContent += `---\n\n`;
-
-      serviceLogs.forEach(log => {
-        const hrs = (log.durationSeconds / 3600).toFixed(2);
-        mdContent += `### ${log.activity}\n`;
-        mdContent += `- **Date:** ${log.date}\n`;
-        mdContent += `- **Time:** ${log.startTime} – ${log.endTime} (${hrs} hrs)\n`;
-        if (log.notes) {
-          mdContent += `- **Details:** ${log.notes}\n`;
-        }
-        mdContent += `\n`;
+    function summaryByActivity() {
+      const map = {};
+      serviceLogs.forEach(l => {
+        if (!map[l.activity]) map[l.activity] = { seconds: 0, count: 0 };
+        map[l.activity].seconds += (l.durationSeconds || 0);
+        map[l.activity].count += 1;
       });
-
-      downloadFile(mdContent, 'community_service_resume.md', 'text/markdown');
-      toggleDataOverlay(false);
+      return Object.keys(map)
+        .sort(compareCustomOrder)
+        .map(a => ({ activity: a, seconds: map[a].seconds, count: map[a].count }));
     }
 
-    // Direct JSON Export (.json backup file download)
+    function directExportMarkdown() {
+      if (serviceLogs.length === 0) return showToast('No service logs to export yet');
+      const totalHrs = (totalSeconds() / 3600).toFixed(2);
+
+      let md = '# Community Service Log — ' + OWNER_NAME + '\n\n';
+      md += '**Total Hours:** ' + totalHrs + ' hours across ' + serviceLogs.length + ' session' + (serviceLogs.length === 1 ? '' : 's') + '\n\n';
+      md += '## Summary by Activity\n\n';
+      summaryByActivity().forEach(s => {
+        md += '- **' + s.activity + '** — ' + (s.seconds / 3600).toFixed(2) + ' hrs (' + s.count + ' session' + (s.count === 1 ? '' : 's') + ')\n';
+      });
+      md += '\n## Sessions\n\n';
+      [...serviceLogs].sort((a, b) => new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime)).forEach(log => {
+        md += '### ' + log.activity + '\n';
+        md += '- **Date:** ' + log.date + '\n';
+        md += '- **Time:** ' + log.startTime + ' – ' + log.endTime + ' (' + ((log.durationSeconds || 0) / 3600).toFixed(2) + ' hrs)\n';
+        if (log.notes) md += '- **Details:** ' + log.notes + '\n';
+        md += '\n';
+      });
+      downloadFile(md, 'community_service_resume.md', 'text/markdown');
+      toggleDataOverlay(false);
+      showToast('Resume Markdown downloaded');
+    }
+
+    function directExportCSV() {
+      if (serviceLogs.length === 0) return showToast('No service logs to export yet');
+      const esc = v => '"' + String(v || '').replace(/"/g, '""') + '"';
+      const rows = [['Activity', 'Date', 'Start', 'End', 'Hours', 'Notes']];
+      serviceLogs.forEach(l => rows.push([
+        l.activity, l.date, l.startTime, l.endTime,
+        ((l.durationSeconds || 0) / 3600).toFixed(2), l.notes || ''
+      ]));
+      const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+      downloadFile(csv, 'community_service_log.csv', 'text/csv');
+      toggleDataOverlay(false);
+      showToast('CSV downloaded');
+    }
+
     function directExportJSON() {
-      const dataStr = JSON.stringify(serviceLogs, null, 2);
-      downloadFile(dataStr, 'community_service_backup.json', 'application/json');
+      if (serviceLogs.length === 0) return showToast('No service logs to export yet');
+      downloadFile(JSON.stringify(serviceLogs, null, 2), 'community_service_backup.json', 'application/json');
       toggleDataOverlay(false);
+      showToast('JSON backup downloaded');
     }
 
-    // Import File Dialog Trigger
-    function triggerImportFileDialog() {
-      document.getElementById('importFileInput').click();
-    }
+    function triggerImportFileDialog() { $('importFileInput').click(); }
 
     function handleImportFile(event) {
       const file = event.target.files[0];
+      event.target.value = '';
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         try {
           const imported = JSON.parse(e.target.result);
           if (Array.isArray(imported)) {
-            serviceLogs = imported;
+            const existing = new Set(serviceLogs.map(l => l.id));
+            const fresh = imported.filter(l => l && l.activity && !existing.has(l.id));
+            serviceLogs = serviceLogs.concat(fresh);
             saveLogs();
             renderHistory();
-            alert('Service data imported successfully!');
             toggleDataOverlay(false);
+            showToast('Imported ' + fresh.length + ' new entr' + (fresh.length === 1 ? 'y' : 'ies') + (fresh.length < imported.length ? ' (' + (imported.length - fresh.length) + ' duplicates skipped)' : ''));
           } else {
-            alert('Invalid backup file format.');
+            showToast('Invalid backup file format');
           }
         } catch (err) {
-          alert('Error parsing JSON backup file.');
+          showToast('Error parsing JSON backup file');
         }
       };
       reader.readAsText(file);
     }
 
-    // Helper Utility for Initiating Downloads
-    function downloadFile(content, fileName, contentType) {
-      const a = document.createElement('a');
-      const file = new Blob([content], { type: contentType });
-      a.href = URL.createObjectURL(file);
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
+    setDefaultDates();
+    updateAutocompleteOptions();
+    renderHistory();
+    restoreTimerState();
+    updateTimerButtonState();
 
-    // Helper String Escape
-    function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeEditModal();
+    });
+    $('editModal').addEventListener('click', e => { if (e.target === $('editModal')) closeEditModal(); });
+
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
     }
   </script>
 </body>
